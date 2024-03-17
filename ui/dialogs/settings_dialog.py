@@ -1,11 +1,16 @@
 from typing import Callable
-from PyQt6.QtWidgets import QDialog, QVBoxLayout, QWidget, QLineEdit, QPushButton
+from PyQt6.QtWidgets import QDialog, QVBoxLayout, QWidget, QLineEdit, QPushButton, QSpacerItem, QSizePolicy
 
 from models.settings_models import EmailConnectionSettings, Settings
 from storage.persistant_settings import get_settings, set_settings
+from ui.widgets.hr import Hr
 from ui.widgets.label import Label
 from ui.widgets.password_line_edit import PasswordLineEdit
+from ui.widgets.vspacer import VSpacer
 from util.number_util import is_integer
+from util.ui_util import bottom_margin, top_margin
+
+ITEMS_SPACING = 5
 
 class SettingsView(QWidget):
     def __init__(self, close_callback: Callable[[], None]):
@@ -13,22 +18,34 @@ class SettingsView(QWidget):
 
         self.close_callback = close_callback
 
-        label_width = 90
+        label_width = 160
 
         self.layout = QVBoxLayout()
 
         self.imap_lineedit = QLineEdit()
+        bottom_margin(self.imap_lineedit, ITEMS_SPACING)
+
         self.email_linedit = QLineEdit()
+        bottom_margin(self.email_linedit, ITEMS_SPACING)
+
         self.password_lineedit = PasswordLineEdit()
+        bottom_margin(self.password_lineedit, ITEMS_SPACING)
+
         self.scan_n_latest_emails_lineedit = QLineEdit()
+        bottom_margin(self.scan_n_latest_emails_lineedit, ITEMS_SPACING)
 
         save_button = QPushButton("Save")
+        top_margin(self.scan_n_latest_emails_lineedit, ITEMS_SPACING)
         save_button.clicked.connect(self._save_button_clicked)
 
+        self.layout.addItem(VSpacer())
         self.layout.addWidget(Label(self.imap_lineedit, "IMAP-Server:", label_width))
         self.layout.addWidget(Label(self.email_linedit, "E-Mail:", label_width))
         self.layout.addWidget(Label(self.password_lineedit, "Password:", label_width))
-        self.layout.addWidget(Label(self.scan_n_latest_emails_lineedit, "Scan E-Mails:", label_width))
+        self.layout.addWidget(Hr())
+        self.layout.addWidget(Label(self.scan_n_latest_emails_lineedit, "Scan latest n emails:", label_width))
+        self.layout.addItem(VSpacer(15))
+        self.layout.addItem(VSpacer())
         self.layout.addWidget(save_button)
 
         self.setLayout(self.layout)
@@ -47,7 +64,7 @@ class SettingsView(QWidget):
         self.imap_lineedit.setText(settings.email_connection_settings.imap_server)
         self.email_linedit.setText(settings.email_connection_settings.email_address)
         self.password_lineedit.set_password(settings.email_connection_settings.password)
-        self.scan_n_latest_emails_lineedit.setText(settings.scan_n_latest_emails)
+        self.scan_n_latest_emails_lineedit.setText(str(settings.scan_n_latest_emails))
 
     def _save_button_clicked(self):
         self._save_settings()

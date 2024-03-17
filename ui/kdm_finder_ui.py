@@ -1,5 +1,6 @@
 from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QPushButton, QListWidget, QProgressBar, QHBoxLayout, QLabel
 
+from ui.dialogs.error_dialog import ErrorDialog
 from ui.dialogs.info_dialog import InfoDialog
 from ui.dialogs.settings_dialog import SettingsDialog
 
@@ -81,7 +82,7 @@ def launch():
 
     window = QMainWindow()
     window.setMinimumSize(400, 300)
-    window.setBaseSize(900, 700)
+    window.resize(900, 500)
     window.setWindowTitle("KDM-Finder")
 
     window.setCentralWidget(KdmFinderView())
