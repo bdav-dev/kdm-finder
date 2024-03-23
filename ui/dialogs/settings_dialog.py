@@ -1,8 +1,9 @@
-from typing import Callable
-from PyQt6.QtWidgets import QDialog, QVBoxLayout, QWidget, QLineEdit, QPushButton, QSpacerItem, QSizePolicy
+from typing import Callable, List
+from PyQt6.QtWidgets import QDialog, QVBoxLayout, QWidget, QLineEdit, QPushButton
 
-from models.settings_models import EmailConnectionSettings, Settings
+from models.settings_models import InputValidation, Setting
 from storage.persistant_settings import get_settings, set_settings
+from ui.dialogs.error_dialog import ErrorDialog
 from ui.widgets.hr import Hr
 from ui.widgets.label import Label
 from ui.widgets.password_line_edit import PasswordLineEdit
@@ -10,32 +11,39 @@ from ui.widgets.vspacer import VSpacer
 from util.number_util import is_integer
 from util.ui_util import bottom_margin, top_margin
 
-ITEMS_SPACING = 5
 
 class SettingsView(QWidget):
+    
     def __init__(self, close_callback: Callable[[], None]):
         super().__init__()
 
         self.close_callback = close_callback
+        self.settings = get_settings()
+        
+        self._init_ui()
+        self._init_setting_values()
+        self._mount_settings()
 
+    def _init_ui(self):
         label_width = 160
+        items_spacing = 5
 
         self.layout = QVBoxLayout()
 
         self.imap_lineedit = QLineEdit()
-        bottom_margin(self.imap_lineedit, ITEMS_SPACING)
+        bottom_margin(self.imap_lineedit, items_spacing)
 
         self.email_linedit = QLineEdit()
-        bottom_margin(self.email_linedit, ITEMS_SPACING)
+        bottom_margin(self.email_linedit, items_spacing)
 
         self.password_lineedit = PasswordLineEdit()
-        bottom_margin(self.password_lineedit, ITEMS_SPACING)
+        bottom_margin(self.password_lineedit, items_spacing)
 
         self.scan_n_latest_emails_lineedit = QLineEdit()
-        bottom_margin(self.scan_n_latest_emails_lineedit, ITEMS_SPACING)
+        bottom_margin(self.scan_n_latest_emails_lineedit, items_spacing)
 
         save_button = QPushButton("Save")
-        top_margin(self.scan_n_latest_emails_lineedit, ITEMS_SPACING)
+        top_margin(self.scan_n_latest_emails_lineedit, items_spacing)
         save_button.clicked.connect(self._save_button_clicked)
 
         self.layout.addItem(VSpacer())
@@ -50,38 +58,102 @@ class SettingsView(QWidget):
 
         self.setLayout(self.layout)
 
-        self._mount_settings()
+    def _init_setting_values(self):
+        self.setting_values: List[Setting] = []
 
+        self.imap_server_setting = Setting(
+            default_value=self.settings.email_connection_settings.imap_server,
+            value_supplier=lambda: self.imap_lineedit.text(),
+            value_emit_consumer=lambda value: self.settings.email_connection_settings.set_imap_server(value),
+            validation=lambda value: (
+               InputValidation.reject("IMAP server is not specified") if value.isspace() or not value  else InputValidation.accept()
+            )
+        )
+        self.setting_values.append(self.imap_server_setting)
 
-    def _input_validation(self) -> bool:
-        return self._is_scan_n_latest_emails_numeric()
+        self.email_address_setting = Setting(
+            default_value=self.settings.email_connection_settings.email_address,
+            value_supplier=lambda: self.email_linedit.text(),
+            value_emit_consumer=lambda value: self.settings.email_connection_settings.set_email_address(value),
+            validation=lambda value: (
+               InputValidation.reject("Email is not specified") if value.isspace() or not value else InputValidation.accept()
+            )
+        )
+        self.setting_values.append(self.email_address_setting)
 
-    def _is_scan_n_latest_emails_numeric(self) -> bool:
-        return is_integer(self.scan_n_latest_emails_lineedit.text())
+        self.password_setting = Setting(
+            default_value=self.settings.email_connection_settings.password,
+            value_supplier=lambda: self.password_lineedit.get_password(),
+            value_emit_consumer=lambda value: self.settings.email_connection_settings.set_password(value),
+            validation=lambda value: (
+               InputValidation.reject("Password is not specified") if value.isspace() or not value  else InputValidation.accept()
+            )
+        )
+        self.setting_values.append(self.password_setting)
+
+        self.scan_n_latest_emails_setting = Setting(
+            default_value=self.settings.scan_n_latest_emails,
+            value_supplier=lambda: self.scan_n_latest_emails_lineedit.text(),
+            value_emit_consumer=lambda value: self.settings.set_scan_n_latest_emails(int(value)),
+            validation=lambda value: self.validate_scan_n_latest_emails(value)
+        )
+        self.setting_values.append(self.scan_n_latest_emails_setting)
 
     def _mount_settings(self):
-        settings = get_settings()
-        self.imap_lineedit.setText(settings.email_connection_settings.imap_server)
-        self.email_linedit.setText(settings.email_connection_settings.email_address)
-        self.password_lineedit.set_password(settings.email_connection_settings.password)
-        self.scan_n_latest_emails_lineedit.setText(str(settings.scan_n_latest_emails))
+        self.imap_lineedit.setText(self.imap_server_setting.default_value)
+        self.email_linedit.setText(self.email_address_setting.default_value)
+        self.password_lineedit.set_password(self.password_setting.default_value)
+        self.scan_n_latest_emails_lineedit.setText(str(self.scan_n_latest_emails_setting.default_value))
 
     def _save_button_clicked(self):
         self._save_settings()
-        self.close_callback()
 
     def _save_settings(self):
-        settings = Settings()
+        reject_reasons: List[str] = []
 
-        email_connection_settings = EmailConnectionSettings()
-        email_connection_settings.imap_server = self.imap_lineedit.text()
-        email_connection_settings.email_address = self.email_linedit.text()
-        email_connection_settings.password = self.password_lineedit.get_password()
-        settings.email_connection_settings = email_connection_settings
+        for setting in self.setting_values:
+            input_validation = setting.validate()
 
-        settings.scan_n_latest_emails = self.scan_n_latest_emails_lineedit.text()
+            if input_validation.was_rejected():
+                reject_reasons.append(input_validation.reject_reason)
 
-        set_settings(settings)
+
+        if reject_reasons:
+            self.show_input_validation_error_dialog(reject_reasons)
+
+        else:
+            for setting in self.setting_values:
+                setting.emit()
+
+            set_settings(self.settings)
+            self.close_callback()
+            
+    def validate_scan_n_latest_emails(self, user_input: str):
+        if user_input.isspace() or not user_input:
+            return InputValidation.reject("Scan n latest emails is not specified")
+
+        if not is_integer(user_input):
+            return InputValidation.reject("Scan n latest emails must be an integer")
+        
+        value_as_int = int(user_input)
+
+        if value_as_int <= 0:
+            return InputValidation.reject("Scan n latest emails must be positive")
+
+        return InputValidation.accept()
+
+    def show_input_validation_error_dialog(self, reject_reasons):
+        input_validation_error_message = "Some of your inputs are empty or incorrect.\nPlease check the following error messages:\n\n"
+
+        dialog = ErrorDialog(
+            "Input validation error",
+            input_validation_error_message + "- " + "\n- ".join(reject_reasons)
+        )
+        dialog.setModal(True)
+        dialog.exec()
+
+
+
 
 class SettingsDialog(QDialog):
     def __init__(self):
