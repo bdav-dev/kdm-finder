@@ -10,7 +10,7 @@ from ui.widgets.label import Label
 from ui.widgets.password_line_edit import PasswordLineEdit
 from ui.widgets.vspacer import VSpacer
 from util.number_util import is_integer
-from util.string_util import enum
+from util.string_util import enumerate
 from util.ui_util import bottom_margin, top_margin
 
 
@@ -25,6 +25,7 @@ class SettingsView(QWidget):
         self._init_ui()
         self._init_setting_values()
         self._mount_settings()
+
 
     def _init_ui(self):
         label_width = 160
@@ -59,6 +60,7 @@ class SettingsView(QWidget):
         self.layout.addWidget(save_button)
 
         self.setLayout(self.layout)
+
 
     def _init_setting_values(self):
         self.setting_values: List[Setting] = []
@@ -101,14 +103,17 @@ class SettingsView(QWidget):
         )
         self.setting_values.append(self.scan_n_latest_emails_setting)
 
+
     def _mount_settings(self):
         self.imap_lineedit.setText(self.imap_server_setting.default_value)
         self.email_linedit.setText(self.email_address_setting.default_value)
         self.password_lineedit.set_password(self.password_setting.default_value)
         self.scan_n_latest_emails_lineedit.setText(str(self.scan_n_latest_emails_setting.default_value))
 
+
     def _save_button_clicked(self):
         self._save_settings()
+
 
     def _save_settings(self):
         reject_reasons: List[str] = []
@@ -130,6 +135,7 @@ class SettingsView(QWidget):
             set_settings(self.settings)
             self.close_callback()
             
+
     def validate_scan_n_latest_emails(self, user_input: str):
         if user_input.isspace() or not user_input:
             return InputValidation.reject("Scan n latest emails is not specified")
@@ -144,18 +150,20 @@ class SettingsView(QWidget):
 
         return InputValidation.accept()
 
+
     def show_input_validation_error_dialog(self, reject_reasons):
         input_validation_error_message = "Some of your inputs are empty or incorrect.\nPlease check the following error messages:\n\n"
 
         dialog = ErrorDialog(
             "Input validation error",
-            input_validation_error_message + enum(reject_reasons)
+            input_validation_error_message + enumerate(reject_reasons)
         )
         dialog.setModal(True)
         dialog.exec()
 
 
 class SettingsDialog(QDialog):
+
     def __init__(self, exit_app_on_close: bool = False):
         super().__init__()
 
@@ -171,6 +179,7 @@ class SettingsDialog(QDialog):
 
         self.setLayout(layout)
 
+
     def closeEvent(self, event: QCloseEvent | None) -> None:
         is_window_bar_close = False if not event else event.spontaneous()
 
@@ -179,7 +188,6 @@ class SettingsDialog(QDialog):
                 event.accept()
             else:
                 exit()
-
         else:
             event.accept()
 

@@ -13,6 +13,7 @@ def centered(widget: QWidget):
 
     return c
 
+
 def bottom_margin(widget: QWidget, bottom_margin: int):
     current_margins = widget.contentsMargins()
 
@@ -22,6 +23,7 @@ def bottom_margin(widget: QWidget, bottom_margin: int):
         current_margins.right(),
         bottom_margin
     )
+
 
 def top_margin(widget: QWidget, top_margin: int):
     current_margins = widget.contentsMargins()

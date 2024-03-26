@@ -1,6 +1,7 @@
 from PyQt6.QtWidgets import QSpacerItem, QSizePolicy
 
 class VSpacer(QSpacerItem):
+        
         def __init__(
                     self,
                     height: int = 0

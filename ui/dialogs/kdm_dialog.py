@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import QDialog, QVBoxLayout, QWidget, QLineEdit, QHBoxLayout, QTextEdit
 
-from models.email_models import Kdm
+from models.kdm_models import Kdm
 from ui.widgets.hspacer import HSpacer
 from ui.widgets.label import Label
 

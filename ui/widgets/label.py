@@ -29,6 +29,7 @@ class Label(QWidget):
         if label_width is not None:
             self.set_label_width(label_width)
 
+
     def set_label_width(self, width):
         self.label.setFixedWidth(width)
 

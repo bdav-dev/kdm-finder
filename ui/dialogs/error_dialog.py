@@ -1,10 +1,11 @@
-from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel,  QSizePolicy, QPushButton, QTextEdit
+from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QTextEdit
 from PyQt6.QtCore import Qt, QSize
 from ui.widgets.hr import Hr
 from ui.widgets.vspacer import VSpacer
 from util.ui_util import centered
 
 class ErrorDialog(QDialog):
+    
     def __init__(
             self,
             title: str,

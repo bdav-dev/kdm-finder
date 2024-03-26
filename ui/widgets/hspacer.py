@@ -1,6 +1,7 @@
 from PyQt6.QtWidgets import QSpacerItem, QSizePolicy
 
 class HSpacer(QSpacerItem):
+        
         def __init__(
                     self,
                     width: int = 0

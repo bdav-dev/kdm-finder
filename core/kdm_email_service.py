@@ -2,8 +2,9 @@ from email.message import Message
 import imaplib
 import email
 
-from models.email_models import Attachment, Email, Kdm
-from models.misc_models import KdmFetchResponse, ProgressReporter
+from models.email_models import Attachment, Email
+from models.kdm_models import Kdm, KdmFetchResponse
+from models.misc_models import ProgressReporter
 from models.settings_models import EmailConnectionSettings
 
 def _establish_email_connection(email_connection_settings: EmailConnectionSettings) -> imaplib.IMAP4_SSL:
@@ -13,6 +14,7 @@ def _establish_email_connection(email_connection_settings: EmailConnectionSettin
         email_connection = imaplib.IMAP4_SSL(email_connection_settings.imap_server)
         email_connection.login(email_connection_settings.email_address, email_connection_settings.password)
         email_connection.select('INBOX')
+
     except Exception as e:
         raise Exception("Connection to email server couldn't be established. Please verify your email connection settings.\n\nException: " + str(e))
 
@@ -28,7 +30,7 @@ def _fetch_latest_emails_raw(
     if status.lower() != 'ok':
         raise Exception("Error while fetching latest emails. Status: " + status)
     
-    latest_emails = raw_mail_data[0].split()[-scan_n_latest_emails:]
+    latest_emails: list[any] = raw_mail_data[0].split()[-scan_n_latest_emails:]
     latest_emails.reverse()
 
     return latest_emails
@@ -39,7 +41,7 @@ def _convert_raw_emails(
         email_connection: imaplib.IMAP4_SSL,
         progress_reporter: ProgressReporter = None
     ) -> tuple[list[str], list[Email]]:
-    mails: list[Email] = []
+    emails: list[Email] = []
     skipped_emails: list[str] = []
     
     if progress_reporter:
@@ -51,14 +53,14 @@ def _convert_raw_emails(
 
         if status.lower() == 'ok':
             mail = _get_mail_object(mail_data)
-            mails.append(mail)
+            emails.append(mail)
         else:
             skipped_emails.append(str(num))
 
         if progress_reporter:
             progress_reporter.next()
 
-    return (skipped_emails, mails)
+    return (skipped_emails, emails)
 
 
 def _get_mail_object(mail_data: Message) -> Email:
@@ -80,9 +82,10 @@ def _get_mail_object(mail_data: Message) -> Email:
     return mail
 
 
-def _close_email_connection(email_connection):
+def _close_email_connection(email_connection: imaplib.IMAP4_SSL):
     email_connection.close()
     email_connection.logout()
+
 
 def _get_kdms_from_emails(mails: list[Email]) -> list[Kdm]:
     kdms: list[Kdm] = []

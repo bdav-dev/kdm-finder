@@ -1,10 +1,11 @@
 import shelve
 
-from models.settings_models import EmailConnectionSettings, Settings
+from models.settings_models import Settings
 
 
 SETTINGS_FILENAME = "app_settings"
 SETTINGS_SHELVE_KEY = "settings"
+
 
 def get_settings() -> Settings | None:
     with shelve.open(SETTINGS_FILENAME) as storage:
@@ -12,9 +13,11 @@ def get_settings() -> Settings | None:
             return storage[SETTINGS_SHELVE_KEY]
         return Settings()
 
+
 def set_settings(settings: Settings):
     with shelve.open(SETTINGS_FILENAME) as storage:
         storage[SETTINGS_SHELVE_KEY] = settings
+
 
 def are_kdm_fetch_settings_valid() -> bool:
     settings = get_settings()

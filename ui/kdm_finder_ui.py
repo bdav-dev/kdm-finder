@@ -3,8 +3,8 @@ from PyQt6.QtCore import QSize
 from PyQt6.QtGui import QIcon, QPixmap
 
 from core.kdm_email_service import get_kdms_from_email
-from models.email_models import Kdm
-from models.misc_models import KdmFetchResponse, ProgressReporter
+from models.kdm_models import Kdm, KdmFetchResponse
+from models.misc_models import ProgressReporter
 from storage.persistant_settings import are_kdm_fetch_settings_valid, get_settings
 from ui.dialogs.error_dialog import ErrorDialog
 from ui.dialogs.info_dialog import InfoDialog
@@ -15,12 +15,13 @@ from ui.widgets.vspacer import VSpacer
 from util.file_system_util import get_absolute_path
 from util.ui_async import Async
 
+
 class KdmFinderView(QWidget):
 
     def __init__(self):
         super().__init__()
 
-        self.blockable_widgets = []
+        self.blockable_widgets: list[QWidget] = []
 
         layout = QVBoxLayout()
         self.setLayout(layout)
@@ -75,6 +76,7 @@ class KdmFinderView(QWidget):
 
         self.init()
 
+
     def init(self):
         self.save_selected_button.setEnabled(False)
 
@@ -91,8 +93,10 @@ class KdmFinderView(QWidget):
             self.launch_error_dialog("Save error", "No items selected.", QSize(310, 210))
             return
 
+
     def refresh_button_clicked(self):
         self.refresh_kdms()
+
 
     def refresh_kdms(self):
         self.kdm_list.clear()
@@ -107,6 +111,7 @@ class KdmFinderView(QWidget):
             progress=lambda progress: self.progressbar.setValue(progress)
         )
 
+
     def handle_kdm_response_after_fetch(self, fetchResponse: KdmFetchResponse):
         self.set_widgets_blocked(False)
         self.clear_progress_bar()
@@ -119,6 +124,7 @@ class KdmFinderView(QWidget):
         if fetchResponse.is_erroneous() or fetchResponse.has_skipped_emails():
             self.launch_kdm_fetch_error_dialog(fetchResponse)
 
+
     def display_kdms_in_list(self, kdms: list[Kdm]):
         for kdm in kdms:
             item = QListWidgetItem(self.kdm_list)
@@ -126,32 +132,39 @@ class KdmFinderView(QWidget):
             item.setSizeHint(kdm_list_item.sizeHint())
             self.kdm_list.setItemWidget(item, kdm_list_item)
 
+
     def clear_progress_bar(self):
         self.progressbar.setValue(0)
+
 
     def set_widgets_blocked(self, blocked: bool):
         for widget in self.blockable_widgets:
             widget.setDisabled(blocked)
+
 
     def launch_settings_dialog(self, exit_app_on_close: bool = False):
         settings_dialog = SettingsDialog(exit_app_on_close)
         settings_dialog.setModal(True)
         settings_dialog.exec()
 
+
     def launch_info_dialog(self):
         info_dialog = InfoDialog()
         info_dialog.setModal(True)
         info_dialog.exec()
+
 
     def launch_error_dialog(self, title: str, description: str, initial_size: QSize = None):
         error_dialog = ErrorDialog(title, description, initial_size)
         error_dialog.setModal(True)
         error_dialog.exec()
 
+
     def launch_kdm_fetch_error_dialog(self, kdm_fetch_response: KdmFetchResponse):
         error_dialog = KdmFetchErrorDialog(kdm_fetch_response)
         error_dialog.setModal(True)
         error_dialog.exec()
+
 
 def launch():
     app = QApplication([])
