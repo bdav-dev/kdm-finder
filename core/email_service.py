@@ -132,11 +132,11 @@ def _get_kdm_from_email(mail: Email) -> list[Kdm]:
 def get_kdms_from_email(
         email_connection_settings: EmailConnectionSettings,
         scan_n_latest_emails: int,
-        progess_reporter: ProgressReporter = None
+        progress_reporter: ProgressReporter = None
     ) -> list[Kdm]:
     email_connection = _establish_email_connection(email_connection_settings)
     latest_emails_raw = _fetch_latest_emails_raw(scan_n_latest_emails, email_connection)
-    emails = _convert_raw_emails(latest_emails_raw, email_connection, progess_reporter)
+    emails = _convert_raw_emails(latest_emails_raw, email_connection, progress_reporter)
     kdms = _get_kdms_from_emails(emails)
     _close_email_connection(email_connection)
 
