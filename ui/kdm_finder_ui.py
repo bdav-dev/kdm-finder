@@ -1,8 +1,10 @@
-from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QPushButton, QListWidget, QProgressBar, QHBoxLayout, QLabel, QListWidgetItem
+import os
+from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QPushButton, QListWidget, QProgressBar, QHBoxLayout, QLabel, QListWidgetItem, QFileDialog
 from PyQt6.QtCore import QSize
 from PyQt6.QtGui import QIcon, QPixmap
 
 from core.kdm_email_service import get_kdms_from_email
+from core.save_kdm_service import save_kdms
 from models.kdm_models import Kdm, KdmFetchResponse
 from models.misc_models import ProgressReporter
 from storage.persistant_settings import are_kdm_fetch_settings_valid, get_settings
@@ -55,7 +57,6 @@ class KdmFinderView(QWidget):
         settings_button = QPushButton("Settings")
         settings_button.setFixedWidth(100)
         settings_button.clicked.connect(self.launch_settings_dialog)
-        self.blockable_widgets.append(settings_button)
         settings_bar_layout.addWidget(settings_button)
 
         settings_bar_layout.addStretch()
@@ -63,7 +64,6 @@ class KdmFinderView(QWidget):
         info_button = QPushButton("Info")
         info_button.setFixedWidth(40)
         info_button.clicked.connect(self.launch_info_dialog)
-        self.blockable_widgets.append(info_button)
         settings_bar_layout.addWidget(info_button)
 
         layout.addLayout(top_bar_layout)
@@ -87,11 +87,28 @@ class KdmFinderView(QWidget):
 
 
     def save_selected_button_clicked(self):
+        self.save_selected_kdms()
+
+
+    def save_selected_kdms(self):
         selected_items = self.kdm_list.selectedItems()
 
         if not selected_items:
             self.launch_error_dialog("Save error", "No items selected.", QSize(310, 210))
             return
+        
+        home_dir = os.path.expanduser("~")
+        destination_dir = QFileDialog.getExistingDirectory(self, "Select Directory", home_dir)
+        
+        if not destination_dir:
+            return
+
+        selected_kdms: list[Kdm] = map(lambda selected: self.kdm_list.itemWidget(selected).kdm, selected_items)
+
+        try:
+            save_kdms(selected_kdms, destination_dir)
+        except Exception as e:
+            self.launch_error_dialog("Save error", "File(s) couldn't be saved.\n\nException: " + str(e))
 
 
     def refresh_button_clicked(self):
