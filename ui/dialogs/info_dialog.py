@@ -1,8 +1,8 @@
 from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtCore import Qt
+from util.file_system_util import get_absolute_path
 from util.ui_util import centered
-import os
 
 class InfoDialog(QDialog):
     def __init__(self):
@@ -18,8 +18,8 @@ class InfoDialog(QDialog):
         app_label.setContentsMargins(0, 0, 0, 10)
 
         logo_label = QLabel()
-        path = os.path.dirname(os.path.abspath(__file__))
-        logo_pixmap = QPixmap(os.path.join(path, "../../assets/images/logo.webp")).scaled(128, 128)
+       
+        logo_pixmap = QPixmap(get_absolute_path(__file__, "..", "..", "assets", "images", "logo.webp")).scaled(128, 128)
         logo_label.setPixmap(logo_pixmap)
 
         dev_label = QLabel("Developed for FREE CINEMA e.V.")

@@ -1,20 +1,8 @@
-from datetime import date
-from typing import Callable, List
-from PyQt6.QtWidgets import QDialog, QVBoxLayout, QWidget, QLineEdit, QPushButton, QHBoxLayout, QTextEdit
+from PyQt6.QtWidgets import QDialog, QVBoxLayout, QWidget, QLineEdit, QHBoxLayout, QTextEdit
 
 from models.email_models import Kdm
-from models.settings_models import InputValidation, Setting
-from storage.persistant_settings import get_settings, set_settings
-from ui.dialogs.error_dialog import ErrorDialog
-from ui.widgets.hr import Hr
 from ui.widgets.hspacer import HSpacer
 from ui.widgets.label import Label
-from ui.widgets.password_line_edit import PasswordLineEdit
-from ui.widgets.vspacer import VSpacer
-from util.number_util import is_integer
-from util.ui_util import bottom_margin, top_margin
-
-
 
 class KdmView(QWidget):
 
@@ -66,7 +54,7 @@ class KdmDialog(QDialog):
 
         self.kdm_view = KdmView(kdm)
 
-        self.resize(1300, 500)
+        self.resize(1300, 600)
 
         layout = QVBoxLayout()
         layout.addWidget(self.kdm_view)

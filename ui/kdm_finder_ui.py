@@ -1,16 +1,18 @@
-from tkinter import W
 from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QPushButton, QListWidget, QProgressBar, QHBoxLayout, QLabel, QListWidgetItem
+from PyQt6.QtCore import QSize
 from PyQt6.QtGui import QIcon, QPixmap
 
-import os
-
-from core.email_service import get_kdms_from_email
+from core.kdm_email_service import get_kdms_from_email
 from models.email_models import Kdm
-from models.misc_models import ProgressReporter
-from storage.persistant_settings import get_settings
+from models.misc_models import KdmFetchResponse, ProgressReporter
+from storage.persistant_settings import are_kdm_fetch_settings_valid, get_settings
+from ui.dialogs.error_dialog import ErrorDialog
 from ui.dialogs.info_dialog import InfoDialog
+from ui.dialogs.kdm_fetch_error_dialog import KdmFetchErrorDialog
 from ui.dialogs.settings_dialog import SettingsDialog
 from ui.widgets.kdm_list_item import KdmListItem
+from ui.widgets.vspacer import VSpacer
+from util.file_system_util import get_absolute_path
 from util.ui_async import Async
 
 class KdmFinderView(QWidget):
@@ -23,21 +25,10 @@ class KdmFinderView(QWidget):
         layout = QVBoxLayout()
         self.setLayout(layout)
 
-        self.kdm_list = QListWidget()
-        self.kdm_list.setSelectionMode(QListWidget.SelectionMode.MultiSelection)
-
-        self.progressbar = QProgressBar()
-        self.progressbar.setFixedHeight(7)
-        self.progressbar.setRange(0, 100)
-        self.progressbar.setValue(0)
-        self.progressbar.setTextVisible(False)
-
-        top_bar = QWidget()
         top_bar_layout = QHBoxLayout()
-        top_bar.setLayout(top_bar_layout)
+        top_bar_layout.setContentsMargins(0, 0, 0, 0)
 
         top_bar_layout.addWidget(QLabel("KDMs"))
-        top_bar_layout.setContentsMargins(0, 0, 0, 0)
         
         refresh_kdm_list_button = QPushButton("Refresh")
         refresh_kdm_list_button.setFixedWidth(70)
@@ -45,21 +36,20 @@ class KdmFinderView(QWidget):
         top_bar_layout.addWidget(refresh_kdm_list_button)
         self.blockable_widgets.append(refresh_kdm_list_button)
 
-        buttons_bar = QWidget()
-        buttons_bar_layout = QHBoxLayout()
-        buttons_bar.setLayout(buttons_bar_layout)
+        self.kdm_list = QListWidget()
+        self.kdm_list.setSelectionMode(QListWidget.SelectionMode.MultiSelection)
 
-        save_selected_button = QPushButton("Save selected")
-        self.blockable_widgets.append(save_selected_button)
-        buttons_bar_layout.addWidget(save_selected_button)
-        
-        copy_selected_to_usb_button = QPushButton("Copy selected to USB media")
-        self.blockable_widgets.append(copy_selected_to_usb_button)
-        buttons_bar_layout.addWidget(copy_selected_to_usb_button)
+        self.progressbar = QProgressBar()
+        self.progressbar.setFixedHeight(8)
+        self.progressbar.setRange(0, 100)
+        self.progressbar.setValue(0)
+        self.progressbar.setTextVisible(False)
 
-        settings_bar = QWidget()
+        self.save_selected_button = QPushButton("Save selected")
+        self.save_selected_button.clicked.connect(self.save_selected_button_clicked)
+        self.blockable_widgets.append(self.save_selected_button)
+
         settings_bar_layout = QHBoxLayout()
-        settings_bar.setLayout(settings_bar_layout)
 
         settings_button = QPushButton("Settings")
         settings_button.setFixedWidth(100)
@@ -75,14 +65,76 @@ class KdmFinderView(QWidget):
         self.blockable_widgets.append(info_button)
         settings_bar_layout.addWidget(info_button)
 
-        layout.addWidget(top_bar)
+        layout.addLayout(top_bar_layout)
         layout.addWidget(self.kdm_list)
         layout.addWidget(self.progressbar)
-        layout.addWidget(buttons_bar)
-        layout.addWidget(settings_bar)
+        layout.addItem(VSpacer(5))
+        layout.addWidget(self.save_selected_button)
+        layout.addItem(VSpacer(25))
+        layout.addLayout(settings_bar_layout)
 
-    def launch_settings_dialog(self):
-        settings_dialog = SettingsDialog()
+        self.init()
+
+    def init(self):
+        self.save_selected_button.setEnabled(False)
+
+        if not are_kdm_fetch_settings_valid():
+            self.launch_settings_dialog(True)
+        
+        self.refresh_kdms()
+
+
+    def save_selected_button_clicked(self):
+        selected_items = self.kdm_list.selectedItems()
+
+        if not selected_items:
+            self.launch_error_dialog("Save error", "No items selected.", QSize(310, 210))
+            return
+
+    def refresh_button_clicked(self):
+        self.refresh_kdms()
+
+    def refresh_kdms(self):
+        self.kdm_list.clear()
+        self.clear_progress_bar()
+        self.set_widgets_blocked(True)
+
+        settings = get_settings()
+
+        self.async_operation = Async(
+            run_async=lambda progress_signal: get_kdms_from_email(settings.email_connection_settings, settings.scan_n_latest_emails, ProgressReporter(progress_signal)),
+            when_done=lambda fetch_response: self.handle_kdm_response_after_fetch(fetch_response),
+            progress=lambda progress: self.progressbar.setValue(progress)
+        )
+
+    def handle_kdm_response_after_fetch(self, fetchResponse: KdmFetchResponse):
+        self.set_widgets_blocked(False)
+        self.clear_progress_bar()
+
+        if fetchResponse.has_response():
+            self.display_kdms_in_list(fetchResponse.kdms)
+        else:
+            self.save_selected_button.setEnabled(False)
+
+        if fetchResponse.is_erroneous() or fetchResponse.has_skipped_emails():
+            self.launch_kdm_fetch_error_dialog(fetchResponse)
+
+    def display_kdms_in_list(self, kdms: list[Kdm]):
+        for kdm in kdms:
+            item = QListWidgetItem(self.kdm_list)
+            kdm_list_item = KdmListItem(kdm)
+            item.setSizeHint(kdm_list_item.sizeHint())
+            self.kdm_list.setItemWidget(item, kdm_list_item)
+
+    def clear_progress_bar(self):
+        self.progressbar.setValue(0)
+
+    def set_widgets_blocked(self, blocked: bool):
+        for widget in self.blockable_widgets:
+            widget.setDisabled(blocked)
+
+    def launch_settings_dialog(self, exit_app_on_close: bool = False):
+        settings_dialog = SettingsDialog(exit_app_on_close)
         settings_dialog.setModal(True)
         settings_dialog.exec()
 
@@ -91,33 +143,15 @@ class KdmFinderView(QWidget):
         info_dialog.setModal(True)
         info_dialog.exec()
 
-    def refresh_button_clicked(self):
-        settings = get_settings()
+    def launch_error_dialog(self, title: str, description: str, initial_size: QSize = None):
+        error_dialog = ErrorDialog(title, description, initial_size)
+        error_dialog.setModal(True)
+        error_dialog.exec()
 
-        self.kdm_list.clear()
-        self.progressbar.setValue(0)
-        self.set_widgets_blocked(True)
-
-        self.async_operation = Async(
-            run_async=lambda progress_signal: get_kdms_from_email(settings.email_connection_settings, settings.scan_n_latest_emails, ProgressReporter(progress_signal)),
-            when_done=lambda kdms: self.handle_response(kdms),
-            progress=lambda progress: self.progressbar.setValue(progress)
-        )
-
-    def handle_response(self, kdms: list[Kdm]):
-        print("done")
-        self.set_widgets_blocked(False)
-
-        for kdm in kdms:
-            item = QListWidgetItem(self.kdm_list)
-            kdm_list_item = KdmListItem(kdm)
-            item.setSizeHint(kdm_list_item.sizeHint())
-            self.kdm_list.setItemWidget(item, kdm_list_item)
-
-
-    def set_widgets_blocked(self, blocked: bool):
-        for widget in self.blockable_widgets:
-            widget.setDisabled(blocked)
+    def launch_kdm_fetch_error_dialog(self, kdm_fetch_response: KdmFetchResponse):
+        error_dialog = KdmFetchErrorDialog(kdm_fetch_response)
+        error_dialog.setModal(True)
+        error_dialog.exec()
 
 def launch():
     app = QApplication([])
@@ -130,8 +164,7 @@ def launch():
 
     window.setCentralWidget(KdmFinderView())
     
-    path = os.path.dirname(os.path.abspath(__file__))
-    logo_pixmap = QPixmap(os.path.join(path, "../assets/images/logo.webp"))
+    logo_pixmap = QPixmap(get_absolute_path(__file__, "..", "assets", "images", "logo.webp"))
 
     app.setApplicationName("KDM-Finder")
     app.setApplicationDisplayName("KDM-Finder")

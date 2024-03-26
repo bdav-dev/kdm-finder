@@ -3,13 +3,18 @@ import imaplib
 import email
 
 from models.email_models import Attachment, Email, Kdm
-from models.misc_models import ProgressReporter
+from models.misc_models import KdmFetchResponse, ProgressReporter
 from models.settings_models import EmailConnectionSettings
 
 def _establish_email_connection(email_connection_settings: EmailConnectionSettings) -> imaplib.IMAP4_SSL:
-    email_connection = imaplib.IMAP4_SSL(email_connection_settings.imap_server)
-    email_connection.login(email_connection_settings.email_address, email_connection_settings.password)
-    email_connection.select('INBOX')
+    email_connection: imaplib.IMAP4_SSL
+    
+    try: 
+        email_connection = imaplib.IMAP4_SSL(email_connection_settings.imap_server)
+        email_connection.login(email_connection_settings.email_address, email_connection_settings.password)
+        email_connection.select('INBOX')
+    except Exception as e:
+        raise Exception("Connection to email server couldn't be established. Please verify your email connection settings.\n\nException: " + str(e))
 
     return email_connection
 
@@ -20,9 +25,9 @@ def _fetch_latest_emails_raw(
     ):
     status, raw_mail_data = email_connection.search(None, 'ALL')
 
-    if status != 'OK':
-        pass #TODO
-
+    if status.lower() != 'ok':
+        raise Exception("Error while fetching latest emails. Status: " + status)
+    
     latest_emails = raw_mail_data[0].split()[-scan_n_latest_emails:]
     latest_emails.reverse()
 
@@ -33,8 +38,9 @@ def _convert_raw_emails(
         latest_emails,
         email_connection: imaplib.IMAP4_SSL,
         progress_reporter: ProgressReporter = None
-    ) -> list[Email]:
+    ) -> tuple[list[str], list[Email]]:
     mails: list[Email] = []
+    skipped_emails: list[str] = []
     
     if progress_reporter:
         progress_reporter.max_value = len(latest_emails)
@@ -43,16 +49,16 @@ def _convert_raw_emails(
         status, raw_mail_data = email_connection.fetch(num, '(RFC822)')
         mail_data = email.message_from_bytes(raw_mail_data[0][1])
 
-        if status != 'OK':
-            pass #TODO
-        
-        mail = _get_mail_object(mail_data)
-        mails.append(mail)
+        if status.lower() == 'ok':
+            mail = _get_mail_object(mail_data)
+            mails.append(mail)
+        else:
+            skipped_emails.append(str(num))
 
         if progress_reporter:
             progress_reporter.next()
 
-    return mails
+    return (skipped_emails, mails)
 
 
 def _get_mail_object(mail_data: Message) -> Email:
@@ -133,11 +139,21 @@ def get_kdms_from_email(
         email_connection_settings: EmailConnectionSettings,
         scan_n_latest_emails: int,
         progress_reporter: ProgressReporter = None
-    ) -> list[Kdm]:
-    email_connection = _establish_email_connection(email_connection_settings)
-    latest_emails_raw = _fetch_latest_emails_raw(scan_n_latest_emails, email_connection)
-    emails = _convert_raw_emails(latest_emails_raw, email_connection, progress_reporter)
-    kdms = _get_kdms_from_emails(emails)
-    _close_email_connection(email_connection)
+    ) -> KdmFetchResponse:
 
-    return kdms
+    skipped_emails: list[str]
+    kdms: list[Kdm]
+
+    try:
+        email_connection = _establish_email_connection(email_connection_settings)
+        latest_emails_raw = _fetch_latest_emails_raw(scan_n_latest_emails, email_connection)
+
+        skipped_emails, emails = _convert_raw_emails(latest_emails_raw, email_connection, progress_reporter)
+
+        kdms = _get_kdms_from_emails(emails)
+        _close_email_connection(email_connection)
+
+    except Exception as e:
+        return KdmFetchResponse.erroneous(str(e))
+
+    return KdmFetchResponse.from_response(kdms, skipped_emails)

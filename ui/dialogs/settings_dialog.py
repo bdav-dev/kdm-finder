@@ -1,4 +1,5 @@
 from typing import Callable, List
+from PyQt6.QtGui import QCloseEvent
 from PyQt6.QtWidgets import QDialog, QVBoxLayout, QWidget, QLineEdit, QPushButton
 
 from models.settings_models import InputValidation, Setting
@@ -9,6 +10,7 @@ from ui.widgets.label import Label
 from ui.widgets.password_line_edit import PasswordLineEdit
 from ui.widgets.vspacer import VSpacer
 from util.number_util import is_integer
+from util.string_util import enum
 from util.ui_util import bottom_margin, top_margin
 
 
@@ -147,19 +149,20 @@ class SettingsView(QWidget):
 
         dialog = ErrorDialog(
             "Input validation error",
-            input_validation_error_message + "- " + "\n- ".join(reject_reasons)
+            input_validation_error_message + enum(reject_reasons)
         )
         dialog.setModal(True)
         dialog.exec()
 
 
-
-
 class SettingsDialog(QDialog):
-    def __init__(self):
+    def __init__(self, exit_app_on_close: bool = False):
         super().__init__()
 
+        self.exit_app_on_close = exit_app_on_close
+
         self.setWindowTitle("Settings")
+        self.setFixedHeight(250)
 
         self.settings = SettingsView(self.close)
 
@@ -167,4 +170,16 @@ class SettingsDialog(QDialog):
         layout.addWidget(self.settings)
 
         self.setLayout(layout)
+
+    def closeEvent(self, event: QCloseEvent | None) -> None:
+        is_window_bar_close = False if not event else event.spontaneous()
+
+        if is_window_bar_close:
+            if not self.exit_app_on_close:
+                event.accept()
+            else:
+                exit()
+
+        else:
+            event.accept()
 
