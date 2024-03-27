@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=KDM-Finder
+Exec=python3 /path/to/main.py
+Terminal=false
+Type=Application
+Icon=/path/to/kdm_finder_icon.png
+Version=0.1
+Comment=Find KDMs in your emails
+Categories=Utility;
+Keywords=Cinema;KDM;Finder;DCP;
