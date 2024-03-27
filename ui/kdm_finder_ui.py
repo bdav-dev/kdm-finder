@@ -7,7 +7,7 @@ from core.kdm_email_service import get_kdms_from_email
 from core.save_kdm_service import save_kdms
 from models.kdm_models import Kdm, KdmFetchResponse
 from models.misc_models import ProgressReporter
-from storage.persistant_settings import are_kdm_fetch_settings_valid, get_settings
+from core.settings_service import are_kdm_fetch_settings_valid, get_settings
 from ui.dialogs.error_dialog import ErrorDialog
 from ui.dialogs.info_dialog import InfoDialog
 from ui.dialogs.kdm_fetch_error_dialog import KdmFetchErrorDialog

@@ -3,7 +3,7 @@ from PyQt6.QtGui import QCloseEvent
 from PyQt6.QtWidgets import QDialog, QVBoxLayout, QWidget, QLineEdit, QPushButton
 
 from models.settings_models import InputValidation, Setting
-from storage.persistant_settings import get_settings, set_settings
+from core.settings_service import get_settings, set_settings
 from ui.dialogs.error_dialog import ErrorDialog
 from ui.widgets.hr import Hr
 from ui.widgets.label import Label

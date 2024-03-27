@@ -1,6 +1,7 @@
 from PyQt6.QtWidgets import QWidget, QHBoxLayout
 from PyQt6.QtCore import Qt
 
+
 def centered(widget: QWidget):
     c = QWidget()
     c_layout = QHBoxLayout()

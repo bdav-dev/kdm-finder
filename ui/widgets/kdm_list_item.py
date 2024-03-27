@@ -1,7 +1,8 @@
-from PyQt6.QtWidgets import QWidget, QPushButton, QLabel, QHBoxLayout, QVBoxLayout, QLineEdit
+from PyQt6.QtWidgets import QWidget, QPushButton, QLabel, QHBoxLayout, QVBoxLayout
 
 from models.kdm_models import Kdm
 from ui.dialogs.kdm_dialog import KdmDialog
+
 
 class KdmListItem(QWidget):
 

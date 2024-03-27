@@ -32,17 +32,17 @@ class KdmFetchResponse:
         self.skipped_emails = skipped_emails
 
 
-    @classmethod
-    def from_response(cls, kdms: list[Kdm], skipped_emails: list[str] = None):
-        return cls(
+    @staticmethod
+    def from_response(kdms: list[Kdm], skipped_emails: list[str] = None):
+        return KdmFetchResponse(
             kdms=kdms,
             skipped_emails=skipped_emails
         )
 
 
-    @classmethod
-    def erroneous(cls, error_message: str):
-        return cls(error_message=error_message)
+    @staticmethod
+    def erroneous(error_message: str):
+        return KdmFetchResponse(error_message=error_message)
 
 
     def is_erroneous(self) -> bool:
