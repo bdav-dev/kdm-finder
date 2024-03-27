@@ -1,4 +1,4 @@
-# kdm-finder
+# KDM-Finder
 Find KDMs in your emails
 
 `Project language: English`
@@ -6,7 +6,7 @@ Find KDMs in your emails
 
 
 ## Short Description
-kdm-finder is an application developed for cinemas, simplifying the search for KDMs (Key Delivery Messages) within an email account.
+KDM-Finder is an application developed for cinemas, simplifying the search for KDMs (Key Delivery Messages) within an email account.
 
 A KDM (Key Delivery Message) is required to play an encrypted DCP movie. This is typically is provided as a `.xml` file.
 
@@ -15,13 +15,13 @@ The application is written in Python and uses the PyQt6 UI library.
 
 
 ## Platform
-kdm-finder should work on all platforms supporting Python and PyQt6. However, the application was only tested on Linux (Ubuntu 22.04). 
+KDM-Finder should work on all platforms supporting Python and PyQt6. However, the application was only tested on Linux (Ubuntu 22.04). 
 
 Functionality under macOS or Windows has not been tested.
 
 
 
-## Use kdm-finder
+## Use KDM-Finder
 
 ### Dependencies
 Make sure you have Python and PyQt6 installed. The latter can be installed with `pip install PyQt6`.
@@ -31,7 +31,7 @@ The application is tested with:
 - PyQt6 6.6.1
 
 ### Run and Install
-To use kdm-finder, download the source code of the latest version from GitHub (as a `.zip` file or via `git clone`).
+To use KDM-Finder, download the source code of the latest version from GitHub (as a `.zip` file or via `git clone`).
 
 You can also use this link: https://github.com/bdav-dev/kdm-finder/archive/refs/heads/main.zip
 
@@ -40,20 +40,20 @@ You can also use this link: https://github.com/bdav-dev/kdm-finder/archive/refs/
 2. Execute the python file `main.py` located in the root directory of the project. On Linux, this can be done with `python3 path/to/main.py`
 
 #### Install (Linux)
-A `.desktop` file is provided (in the root directory of the project) to install kdm-finder on Linux systems.
+A `.desktop` file is provided (in the root directory of the project) to install KDM-Finder on Linux systems.
 
-Modify the `Exec` and the `Icon` properties, pointing them to the correct files in your kdm-finder installation:
+Modify the `Exec` and the `Icon` properties, pointing them to the correct files in your KDM-Finder installation:
 - The `Exec` property should point the the `main.py` file
 - The `Icon` property should point the the `kdm_finder_icon.png` file
 
 Copy the `kdm_finder.desktop` file to
-- `~/.local/share/applications/`, if you want to install kdm-finder for the current user
-- `/usr/share/applications/`, if you want to install kdm-finder system wide for all users
+- `~/.local/share/applications/`, if you want to install KDM-Finder for the current user
+- `/usr/share/applications/`, if you want to install KDM-Finder system wide for all users
 
 
 ## Functionality
 ### Email
-The connection to your email account is established via IMAP. Kdm-finder needs the following information to establish an email connection:
+The connection to your email account is established via IMAP. KDM-Finder needs the following information to establish an email connection:
 - IMAP server
 - email address
 - password
@@ -62,11 +62,11 @@ The connection to your email account is established via IMAP. Kdm-finder needs t
 
 
 You can also specify ...
-- ... how many emails kdm-finder should fetch for the search (sorted by receipt time, latest first).
-- ... if kdm-finder should automatically start the search on application startup.
+- ... how many emails KDM-Finder should fetch for the search (sorted by receipt time, latest first).
+- ... if KDM-Finder should automatically start the search on application startup.
 
 ### Search
-kdm-finder fetches the latest emails and determines if an email contains a KDM. An email is considered contain a KDM if
+KDM-Finder fetches the latest emails and determines if an email contains a KDM. An email is considered contain a KDM if
 - the email content, subject or sender contain (case ignored) `kdm` or `key` and
 - the email has an attachment with `.zip` or `.xml` as the file extension.
 
