@@ -8,7 +8,7 @@ SETTINGS_FILENAME = "app_settings"
 SETTINGS_SHELVE_KEY = "settings"
 SETTINGS_FILE_LOCATION = os.path.join(get_app_root_path(), SETTINGS_FILENAME)
 
-def get_settings() -> Settings | None:
+def get_settings() -> Settings:
     with shelve.open(SETTINGS_FILE_LOCATION) as storage:
         if SETTINGS_SHELVE_KEY in storage:
             return storage[SETTINGS_SHELVE_KEY]

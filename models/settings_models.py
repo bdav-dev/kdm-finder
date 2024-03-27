@@ -79,11 +79,15 @@ class Settings:
     def __init__(
             self,
             email_connection_settings: EmailConnectionSettings = EmailConnectionSettings(),
-            scan_n_latest_emails: int = 50
+            scan_n_latest_emails: int = 50,
+            fetch_kdms_on_app_startup: bool = True
         ):
         self.email_connection_settings = email_connection_settings
         self.scan_n_latest_emails = scan_n_latest_emails
+        self.fetch_kdms_on_app_startup = fetch_kdms_on_app_startup
 
+    def set_fetch_kdms_on_app_startup(self, fetch_kdms_on_app_startup):
+        self.fetch_kdms_on_app_startup = fetch_kdms_on_app_startup
 
     def set_scan_n_latest_emails(self, scan_n_latest_emails):
         self.scan_n_latest_emails = scan_n_latest_emails

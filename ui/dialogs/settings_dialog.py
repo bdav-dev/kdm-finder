@@ -1,6 +1,6 @@
 from typing import Callable, List
 from PyQt6.QtGui import QCloseEvent
-from PyQt6.QtWidgets import QDialog, QVBoxLayout, QWidget, QLineEdit, QPushButton
+from PyQt6.QtWidgets import QDialog, QVBoxLayout, QWidget, QLineEdit, QPushButton, QCheckBox
 
 from models.settings_models import InputValidation, Setting
 from core.settings_service import get_settings, set_settings
@@ -11,7 +11,7 @@ from ui.widgets.password_line_edit import PasswordLineEdit
 from ui.widgets.vspacer import VSpacer
 from util.number_util import is_integer
 from util.string_util import enumerate
-from util.ui_util import bottom_margin, top_margin
+from util.ui_util import bottom_margin, centered, top_margin
 
 
 class SettingsView(QWidget):
@@ -45,6 +45,9 @@ class SettingsView(QWidget):
         self.scan_n_latest_emails_lineedit = QLineEdit()
         bottom_margin(self.scan_n_latest_emails_lineedit, items_spacing)
 
+        self.fetch_on_startup_checkbox = QCheckBox('Fetch KDMs on app startup')
+        bottom_margin(self.fetch_on_startup_checkbox, items_spacing)
+
         save_button = QPushButton("Save")
         top_margin(self.scan_n_latest_emails_lineedit, items_spacing)
         save_button.clicked.connect(self._save_button_clicked)
@@ -55,7 +58,8 @@ class SettingsView(QWidget):
         self.layout.addWidget(Label(self.password_lineedit, "Password:", label_width))
         self.layout.addWidget(Hr())
         self.layout.addWidget(Label(self.scan_n_latest_emails_lineedit, "Scan latest n emails:", label_width))
-        self.layout.addItem(VSpacer(15))
+        self.layout.addWidget(centered(self.fetch_on_startup_checkbox))
+        self.layout.addItem(VSpacer(13))
         self.layout.addItem(VSpacer())
         self.layout.addWidget(save_button)
 
@@ -103,12 +107,21 @@ class SettingsView(QWidget):
         )
         self.setting_values.append(self.scan_n_latest_emails_setting)
 
+        self.fetch_on_startup_setting = Setting(
+            default_value=self.settings.fetch_kdms_on_app_startup,
+            value_supplier=lambda: self.fetch_on_startup_checkbox.isChecked(),
+            value_emit_consumer=lambda value: self.settings.set_fetch_kdms_on_app_startup(value),
+            validation=lambda _: InputValidation.accept()
+        )
+        self.setting_values.append(self.fetch_on_startup_setting)
+
 
     def _mount_settings(self):
         self.imap_lineedit.setText(self.imap_server_setting.default_value)
         self.email_linedit.setText(self.email_address_setting.default_value)
         self.password_lineedit.set_password(self.password_setting.default_value)
         self.scan_n_latest_emails_lineedit.setText(str(self.scan_n_latest_emails_setting.default_value))
+        self.fetch_on_startup_checkbox.setChecked(self.fetch_on_startup_setting.default_value)
 
 
     def _save_button_clicked(self):
@@ -170,7 +183,7 @@ class SettingsDialog(QDialog):
         self.exit_app_on_close = exit_app_on_close
 
         self.setWindowTitle("Settings")
-        self.setFixedHeight(250)
+        self.setFixedHeight(295)
 
         self.settings = SettingsView(self.close)
 

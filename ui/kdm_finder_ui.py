@@ -83,7 +83,8 @@ class KdmFinderView(QWidget):
         if not are_kdm_fetch_settings_valid():
             self.launch_settings_dialog(True)
         
-        self.refresh_kdms()
+        if get_settings().fetch_kdms_on_app_startup:
+            self.refresh_kdms()
 
 
     def save_selected_button_clicked(self):
