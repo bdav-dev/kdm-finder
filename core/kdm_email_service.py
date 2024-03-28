@@ -55,7 +55,7 @@ def _convert_raw_emails(
             mail = _get_mail_object(mail_data)
             emails.append(mail)
         else:
-            skipped_emails.append(str(num))
+            skipped_emails.append(str(num) + ", Status: " + status)
 
         if progress_reporter:
             progress_reporter.next()

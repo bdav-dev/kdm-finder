@@ -17,7 +17,7 @@ class InfoDialog(QDialog):
         layout = QVBoxLayout()
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        appname_label = QLabel("KDM-Finder (Version 1.0)")
+        appname_label = QLabel("KDM-Finder (Version 1.0.1)")
 
         links_layout = QHBoxLayout()
         links_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
