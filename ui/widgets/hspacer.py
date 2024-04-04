@@ -10,6 +10,6 @@ class HSpacer(QSpacerItem):
             super().__init__(
                   width,
                   0,
-                  QSizePolicy.Policy.MinimumExpanding if width is 0 else QSizePolicy.Policy.Fixed,
+                  QSizePolicy.Policy.MinimumExpanding if width == 0 else QSizePolicy.Policy.Fixed,
                   QSizePolicy.Policy.Fixed
             )

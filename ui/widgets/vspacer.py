@@ -10,5 +10,5 @@ class VSpacer(QSpacerItem):
                   0,
                   height,
                   QSizePolicy.Policy.Fixed,
-                  QSizePolicy.Policy.MinimumExpanding if height is 0 else QSizePolicy.Policy.Fixed
+                  QSizePolicy.Policy.MinimumExpanding if height == 0 else QSizePolicy.Policy.Fixed
             )
