@@ -1,6 +1,7 @@
 from PyQt6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel
 from PyQt6.QtGui import QPixmap, QDesktopServices
 from PyQt6.QtCore import Qt, QUrl
+from main import APP_VERSION
 from ui.widgets.hspacer import HSpacer
 from ui.widgets.vspacer import VSpacer
 from util.file_system_util import get_absolute_path
@@ -17,7 +18,7 @@ class InfoDialog(QDialog):
         layout = QVBoxLayout()
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        appname_label = QLabel("KDM-Finder (Version 1.0.1)")
+        appname_label = QLabel("KDM-Finder (Version 1.0.2)")
 
         links_layout = QHBoxLayout()
         links_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)

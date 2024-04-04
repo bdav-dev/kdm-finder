@@ -1,6 +1,7 @@
 from email.message import Message
 import imaplib
 import email
+from typing import Callable
 
 from models.email_models import Attachment, Email
 from models.kdm_models import Kdm, KdmFetchResponse
@@ -49,9 +50,9 @@ def _convert_raw_emails(
 
     for num in latest_emails:
         status, raw_mail_data = email_connection.fetch(num, '(RFC822)')
-        mail_data = email.message_from_bytes(raw_mail_data[0][1])
 
         if status.lower() == 'ok':
+            mail_data = email.message_from_bytes(raw_mail_data[0][1])
             mail = _get_mail_object(mail_data)
             emails.append(mail)
         else:
@@ -100,12 +101,13 @@ def _get_kdm_from_email(mail: Email) -> list[Kdm]:
     kdms: list[Kdm] = []
     
     KEYWORDS = ['kdm', 'key']
-    FIND_KEYWORD_IN = [
+    FIND_KEYWORD_IN: list[Callable[[], str]] = [
         lambda: mail.main_content,
         lambda: mail.sender,
         lambda: mail.subject
     ]
-    
+    FIND_KEYWORD_IN.extend(map(lambda attachment: lambda: attachment.filename, mail.attachments))
+
     VALID_ATTACHMENT_FILE_EXTENSIONS = ['.zip', '.xml']
 
     if not mail.attachments:
