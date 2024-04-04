@@ -3,7 +3,7 @@ Find KDMs in your emails
 
 `Project language: English`
 
-
+Current Version: `1.1dev`
 
 ## Short Description
 KDM-Finder is an application developed for cinemas, simplifying the search for KDMs (Key Delivery Messages) within an email account.
@@ -24,7 +24,9 @@ Functionality under macOS or Windows has not been tested.
 ## Use KDM-Finder
 
 ### Dependencies
-Make sure you have Python and PyQt6 installed. The latter can be installed with `pip install PyQt6`.
+Make sure you have Python and PyQt6 installed. The latter can be installed with `pip install PyQt6`.<br/>
+In most cases, the package `libxcb-cursor0` is also required. It can be installed with `sudo apt install libxcb-cursor0` on Linux.
+
 
 The application is tested with:
 - Python 3.10.12
