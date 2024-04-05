@@ -12,10 +12,12 @@ from ui.dialogs.error_dialog import ErrorDialog
 from ui.dialogs.info_dialog import InfoDialog
 from ui.dialogs.kdm_fetch_error_dialog import KdmFetchErrorDialog
 from ui.dialogs.settings_dialog import SettingsDialog
+from ui.dialogs.success_dialog import SuccessDialog
 from ui.widgets.kdm_list_item import KdmListItem
 from ui.widgets.vspacer import VSpacer
 from util.file_system_util import get_absolute_path
 from util.ui_async import Async
+from util.string_util import enumerate
 
 
 class KdmFinderView(QWidget):
@@ -99,15 +101,23 @@ class KdmFinderView(QWidget):
             return
         
         home_dir = os.path.expanduser("~")
-        destination_dir = QFileDialog.getExistingDirectory(self, "Select Directory", home_dir)
+        destination_dir = QFileDialog.getExistingDirectory(self, "Select Save Directory", home_dir)
         
         if not destination_dir:
             return
 
-        selected_kdms: list[Kdm] = map(lambda selected: self.kdm_list.itemWidget(selected).kdm, selected_items)
+        selected_kdms: list[Kdm] = list(map(lambda selected: self.kdm_list.itemWidget(selected).kdm, selected_items))
 
         try:
             save_kdms(selected_kdms, destination_dir)
+            self.launch_success_dialog(
+                "Successfully saved",
+                "Successfully saved following file(s):" + "\n" +
+                enumerate(
+                    map(lambda kdm: "Contents of " + kdm.filename if kdm.filename.lower().endswith(".zip") else kdm.filename, selected_kdms)
+                ) + "\n" +
+                "to " + destination_dir
+            )
         except Exception as e:
             self.launch_error_dialog("Save error", "File(s) couldn't be saved.\n\nException: " + str(e))
 
@@ -177,6 +187,10 @@ class KdmFinderView(QWidget):
         error_dialog.setModal(True)
         error_dialog.exec()
 
+    def launch_success_dialog(self, title: str, description: str, initial_size: QSize = None):
+        error_dialog = SuccessDialog(title, description, initial_size)
+        error_dialog.setModal(True)
+        error_dialog.exec()
 
     def launch_kdm_fetch_error_dialog(self, kdm_fetch_response: KdmFetchResponse):
         error_dialog = KdmFetchErrorDialog(kdm_fetch_response)
