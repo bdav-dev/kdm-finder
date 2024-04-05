@@ -1,3 +1,4 @@
+import email.header
 from email.message import Message
 import imaplib
 import email
@@ -64,17 +65,37 @@ def _convert_raw_emails(
     return (skipped_emails, emails)
 
 
+def _decode_subject(encoded_subject) -> str:
+    decoded_subject = ""
+
+    for part, encoding in email.header.decode_header(encoded_subject):
+        if isinstance(part, bytes):
+            if encoding == None:
+                decoded_subject += part.decode('utf-8', errors='replace')
+            else:
+                decoded_subject += part.decode(encoding, errors='replace')
+                
+        elif isinstance(part, str):
+            decoded_subject += part
+    
+    return decoded_subject
+
+
 def _get_mail_object(mail_data: Message) -> Email:
     mail = Email()
 
-    mail.subject = mail_data['Subject']
+    mail.subject = _decode_subject(mail_data['Subject'])
     mail.sender = mail_data['From']
     mail.date = mail_data['Date']
 
     for part in mail_data.walk():
         if part.get_content_type() == "text/plain":
-            main_content = part.get_payload(decode=True).decode(part.get_content_charset())
-            mail.append_main_content(main_content)
+            content = part.get_payload(decode=True)
+            charset = part.get_content_charset()
+
+            if content:
+                if charset: content = content.decode(charset)
+                mail.append_main_content(content)
 
         filename = part.get_filename()
         if filename:
@@ -122,7 +143,7 @@ def _get_kdm_from_email(mail: Email) -> list[Kdm]:
     for attachment in mail.attachments:
         is_valid_extension = any(
             attachment.filename.lower().endswith(extension) for extension in VALID_ATTACHMENT_FILE_EXTENSIONS
-        )     
+        )
         if not is_valid_extension:
             continue
 

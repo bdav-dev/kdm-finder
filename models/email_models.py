@@ -24,7 +24,10 @@ class Email:
 
 
     def append_main_content(self, main_content: str):
+        if not main_content or not isinstance(main_content, str):
+            return
+
         if (self.main_content == None or self.main_content == ''):
             self.main_content = main_content
         else:
-            self.main_content = self.main_content + "\n" + main_content
+            self.main_content += "\n" + main_content
