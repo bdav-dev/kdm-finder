@@ -89,3 +89,7 @@ Now, you can locate to a directory in your file system in which the KDMs should 
 
 > **Note**<br/>
 > If you save a `.zip` file, the contents of the file will be extracted and saved, rather than the `.zip` file itself.
+
+
+## Known Issues
+- The application windows don't appear in the middle of the screen on Linux when using Wayland
