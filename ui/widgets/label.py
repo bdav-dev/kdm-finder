@@ -32,4 +32,9 @@ class Label(QWidget):
     def set_label_width(self, width):
         self.label.setFixedWidth(width)
 
+    def bold(self):
+        self.label.setStyleSheet('font-weight: bold;')
+        return self
+
+
 
