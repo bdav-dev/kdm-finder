@@ -37,7 +37,7 @@ class KdmFinderView(QWidget):
         
         refresh_kdm_list_button = QPushButton("Refresh")
         refresh_kdm_list_button.setFixedWidth(70)
-        refresh_kdm_list_button.clicked.connect(self.refresh_button_clicked)
+        refresh_kdm_list_button.clicked.connect(self._refresh_button_clicked)
         top_bar_layout.addWidget(refresh_kdm_list_button)
         self.blockable_widgets.append(refresh_kdm_list_button)
 
@@ -53,21 +53,21 @@ class KdmFinderView(QWidget):
         self.progressbar.setTextVisible(False)
 
         self.save_selected_button = QPushButton("Save selected")
-        self.save_selected_button.clicked.connect(self.save_selected_button_clicked)
+        self.save_selected_button.clicked.connect(self._save_selected_button_clicked)
         self.blockable_widgets.append(self.save_selected_button)
 
         settings_bar_layout = QHBoxLayout()
 
         settings_button = QPushButton("Settings")
         settings_button.setFixedWidth(100)
-        settings_button.clicked.connect(self.launch_settings_dialog)
+        settings_button.clicked.connect(self._launch_settings_dialog)
         settings_bar_layout.addWidget(settings_button)
 
         settings_bar_layout.addStretch()
 
         info_button = QPushButton("Info")
         info_button.setFixedWidth(40)
-        info_button.clicked.connect(self.launch_info_dialog)
+        info_button.clicked.connect(self._launch_info_dialog)
         settings_bar_layout.addWidget(info_button)
 
         layout.addLayout(top_bar_layout)
@@ -78,19 +78,54 @@ class KdmFinderView(QWidget):
         layout.addItem(VSpacer(25))
         layout.addLayout(settings_bar_layout)
 
-        self.init()
+        self._init()
 
 
-    def init(self):
+    def _init(self):
         self.save_selected_button.setEnabled(False)
 
         if not are_kdm_fetch_settings_valid():
-            self.launch_settings_dialog(True)
+            self._launch_settings_dialog(True)
         
         if get_settings().fetch_kdms_on_app_startup:
-            self.refresh_kdms()
+            self._refresh_kdms()
 
-    
+
+    def _refresh_kdms(self):
+        self.kdm_list.clear()
+        self._clear_progress_bar()
+        self._set_widgets_blocked(True)
+
+        settings = get_settings()
+
+        self.async_operation = Async(
+            run_async=lambda progress_signal: get_kdms_from_email(settings.email_connection_settings, settings.scan_n_latest_emails, ProgressReporter(progress_signal)),
+            when_done=lambda fetch_response: self._handle_kdm_response_after_fetch(fetch_response),
+            progress=lambda progress: self.progressbar.setValue(progress)
+        )
+
+
+    def _handle_kdm_response_after_fetch(self, fetchResponse: KdmFetchResponse):
+        self._set_widgets_blocked(False)
+        self._clear_progress_bar()
+
+        if fetchResponse.has_response():
+            self._display_kdms_in_list(fetchResponse.kdms)
+        else:
+            self.save_selected_button.setEnabled(False)
+
+        if fetchResponse.is_erroneous() or fetchResponse.has_skipped_emails():
+            self._launch_kdm_fetch_error_dialog(fetchResponse)
+
+
+    def _display_kdms_in_list(self, kdms: list[Kdm]):
+        for kdm in kdms:
+            item = QListWidgetItem(self.kdm_list)
+            kdm_list_item = KdmListItem(kdm)
+            item.setSizeHint(kdm_list_item.sizeHint())
+            self.kdm_list.setItemWidget(item, kdm_list_item)
+
+
     def _show_list_item_context_menu(self, pos):
         if self.kdm_list.count() == 0:
             return
@@ -105,33 +140,29 @@ class KdmFinderView(QWidget):
 
         if kdm_clicked_on != None:
             save_action = QAction("Save single", self)
-            save_action.triggered.connect(lambda: self.save_kdms([kdm_clicked_on]))
+            save_action.triggered.connect(lambda: self._save_kdms([kdm_clicked_on]))
             menu.addAction(save_action)
 
         save_selected_action = QAction("Save selected", self)
-        save_selected_action.triggered.connect(self.save_selected_kdms)
+        save_selected_action.triggered.connect(self._save_selected_kdms)
         menu.addAction(save_selected_action)
 
         menu.exec(self.kdm_list.mapToGlobal(pos))
 
 
-    def save_selected_button_clicked(self):
-        self.save_selected_kdms()
-
-
-    def save_selected_kdms(self):
+    def _save_selected_kdms(self):
         selected_items = self.kdm_list.selectedItems()
 
         if not selected_items:
-            self.launch_error_dialog("Save error", "No items selected.", QSize(310, 210))
+            self._launch_error_dialog("Save error", "No items selected.", QSize(310, 210))
             return
         
         selected_kdms: list[Kdm] = list(map(lambda selected: self.kdm_list.itemWidget(selected).kdm, selected_items))
 
-        self.save_kdms(selected_kdms)
-    
+        self._save_kdms(selected_kdms)
 
-    def save_kdms(self, kdms: list[Kdm]):
+
+    def _save_kdms(self, kdms: list[Kdm]):
         home_dir = os.path.expanduser("~")
         destination_dir = QFileDialog.getExistingDirectory(self, "Select Save Directory", home_dir)
         
@@ -140,7 +171,7 @@ class KdmFinderView(QWidget):
 
         try:
             save_kdms(kdms, destination_dir)
-            self.launch_success_dialog(
+            self._launch_success_dialog(
                 "Successfully saved",
                 "Successfully saved following file(s):" + "\n" +
                 enumerate(
@@ -149,80 +180,51 @@ class KdmFinderView(QWidget):
                 "to " + destination_dir
             )
         except Exception as e:
-            self.launch_error_dialog("Save error", "File(s) couldn't be saved.\n\nException: " + str(e))
+            self._launch_error_dialog("Save error", "File(s) couldn't be saved.\n\nException: " + str(e))
 
 
-    def refresh_button_clicked(self):
-        self.refresh_kdms()
-
-
-    def refresh_kdms(self):
-        self.kdm_list.clear()
-        self.clear_progress_bar()
-        self.set_widgets_blocked(True)
-
-        settings = get_settings()
-
-        self.async_operation = Async(
-            run_async=lambda progress_signal: get_kdms_from_email(settings.email_connection_settings, settings.scan_n_latest_emails, ProgressReporter(progress_signal)),
-            when_done=lambda fetch_response: self.handle_kdm_response_after_fetch(fetch_response),
-            progress=lambda progress: self.progressbar.setValue(progress)
-        )
-
-
-    def handle_kdm_response_after_fetch(self, fetchResponse: KdmFetchResponse):
-        self.set_widgets_blocked(False)
-        self.clear_progress_bar()
-
-        if fetchResponse.has_response():
-            self.display_kdms_in_list(fetchResponse.kdms)
-        else:
-            self.save_selected_button.setEnabled(False)
-
-        if fetchResponse.is_erroneous() or fetchResponse.has_skipped_emails():
-            self.launch_kdm_fetch_error_dialog(fetchResponse)
-
-
-    def display_kdms_in_list(self, kdms: list[Kdm]):
-        for kdm in kdms:
-            item = QListWidgetItem(self.kdm_list)
-            kdm_list_item = KdmListItem(kdm)
-            item.setSizeHint(kdm_list_item.sizeHint())
-            self.kdm_list.setItemWidget(item, kdm_list_item)
-
-
-    def clear_progress_bar(self):
+    def _clear_progress_bar(self):
         self.progressbar.setValue(0)
 
 
-    def set_widgets_blocked(self, blocked: bool):
+    def _set_widgets_blocked(self, blocked: bool):
         for widget in self.blockable_widgets:
             widget.setDisabled(blocked)
 
 
-    def launch_settings_dialog(self, exit_app_on_close: bool = False):
+    def _refresh_button_clicked(self):
+        self._refresh_kdms()
+
+
+    def _save_selected_button_clicked(self):
+        self._save_selected_kdms()
+
+
+    def _launch_settings_dialog(self, exit_app_on_close: bool = False):
         settings_dialog = SettingsDialog(exit_app_on_close)
         settings_dialog.setModal(True)
         settings_dialog.exec()
 
 
-    def launch_info_dialog(self):
+    def _launch_info_dialog(self):
         info_dialog = InfoDialog()
         info_dialog.setModal(True)
         info_dialog.exec()
 
 
-    def launch_error_dialog(self, title: str, description: str, initial_size: QSize = None):
+    def _launch_error_dialog(self, title: str, description: str, initial_size: QSize = None):
         error_dialog = ErrorDialog(title, description, initial_size)
         error_dialog.setModal(True)
         error_dialog.exec()
 
-    def launch_success_dialog(self, title: str, description: str, initial_size: QSize = None):
+
+    def _launch_success_dialog(self, title: str, description: str, initial_size: QSize = None):
         error_dialog = SuccessDialog(title, description, initial_size)
         error_dialog.setModal(True)
         error_dialog.exec()
 
-    def launch_kdm_fetch_error_dialog(self, kdm_fetch_response: KdmFetchResponse):
+
+    def _launch_kdm_fetch_error_dialog(self, kdm_fetch_response: KdmFetchResponse):
         error_dialog = KdmFetchErrorDialog(kdm_fetch_response)
         error_dialog.setModal(True)
         error_dialog.exec()
