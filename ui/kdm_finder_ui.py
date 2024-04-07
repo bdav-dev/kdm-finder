@@ -1,7 +1,7 @@
 import os
-from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QPushButton, QListWidget, QProgressBar, QHBoxLayout, QLabel, QListWidgetItem, QFileDialog
-from PyQt6.QtCore import QSize
-from PyQt6.QtGui import QIcon, QPixmap
+from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QPushButton, QListWidget, QProgressBar, QHBoxLayout, QLabel, QListWidgetItem, QFileDialog, QMenu
+from PyQt6.QtCore import QSize, Qt
+from PyQt6.QtGui import QIcon, QPixmap, QAction
 
 from core.kdm_email_service import get_kdms_from_email
 from core.save_kdm_service import save_kdms
@@ -42,6 +42,8 @@ class KdmFinderView(QWidget):
         self.blockable_widgets.append(refresh_kdm_list_button)
 
         self.kdm_list = QListWidget()
+        self.kdm_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.kdm_list.customContextMenuRequested.connect(self._show_list_item_context_menu)
         self.kdm_list.setSelectionMode(QListWidget.SelectionMode.MultiSelection)
 
         self.progressbar = QProgressBar()
@@ -88,6 +90,30 @@ class KdmFinderView(QWidget):
         if get_settings().fetch_kdms_on_app_startup:
             self.refresh_kdms()
 
+    
+    def _show_list_item_context_menu(self, pos):
+        if self.kdm_list.count() == 0:
+            return
+
+        item_clicked_on = self.kdm_list.itemAt(pos)
+        kdm_clicked_on: Kdm = None
+
+        if item_clicked_on:
+            kdm_clicked_on = self.kdm_list.itemWidget(item_clicked_on).kdm
+
+        menu = QMenu(self)
+
+        if kdm_clicked_on != None:
+            save_action = QAction("Save single", self)
+            save_action.triggered.connect(lambda: self.save_kdms([kdm_clicked_on]))
+            menu.addAction(save_action)
+
+        save_selected_action = QAction("Save selected", self)
+        save_selected_action.triggered.connect(self.save_selected_kdms)
+        menu.addAction(save_selected_action)
+
+        menu.exec(self.kdm_list.mapToGlobal(pos))
+
 
     def save_selected_button_clicked(self):
         self.save_selected_kdms()
@@ -100,21 +126,25 @@ class KdmFinderView(QWidget):
             self.launch_error_dialog("Save error", "No items selected.", QSize(310, 210))
             return
         
+        selected_kdms: list[Kdm] = list(map(lambda selected: self.kdm_list.itemWidget(selected).kdm, selected_items))
+
+        self.save_kdms(selected_kdms)
+    
+
+    def save_kdms(self, kdms: list[Kdm]):
         home_dir = os.path.expanduser("~")
         destination_dir = QFileDialog.getExistingDirectory(self, "Select Save Directory", home_dir)
         
         if not destination_dir:
             return
 
-        selected_kdms: list[Kdm] = list(map(lambda selected: self.kdm_list.itemWidget(selected).kdm, selected_items))
-
         try:
-            save_kdms(selected_kdms, destination_dir)
+            save_kdms(kdms, destination_dir)
             self.launch_success_dialog(
                 "Successfully saved",
                 "Successfully saved following file(s):" + "\n" +
                 enumerate(
-                    map(lambda kdm: "Contents of " + kdm.filename if kdm.filename.lower().endswith(".zip") else kdm.filename, selected_kdms)
+                    map(lambda kdm: "Contents of " + kdm.filename if kdm.filename.lower().endswith(".zip") else kdm.filename, kdms)
                 ) + "\n" +
                 "to " + destination_dir
             )
