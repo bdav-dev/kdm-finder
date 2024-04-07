@@ -16,10 +16,10 @@ class Attachment:
 class Email:
     
     def __init__(self):
-        self.sender: str = None
-        self.subject: str = None
-        self.date: str = None
-        self.main_content: str = None
+        self.sender: str = ''
+        self.subject: str = ''
+        self.date: str = ''
+        self.main_content: str = ''
         self.attachments: list[Attachment] = []
 
 
@@ -27,7 +27,7 @@ class Email:
         if not main_content or not isinstance(main_content, str):
             return
 
-        if (self.main_content == None or self.main_content == ''):
+        if self.main_content == '':
             self.main_content = main_content
         else:
             self.main_content += "\n" + main_content

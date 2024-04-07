@@ -135,7 +135,7 @@ def _get_kdm_from_email(mail: Email) -> list[Kdm]:
         return []
     
     does_mail_contain_keyword = any(
-        keyword in text().lower() for keyword in KEYWORDS for text in FIND_KEYWORD_IN
+        keyword in ('' if text() == None else text().lower()) for keyword in KEYWORDS for text in FIND_KEYWORD_IN
     )
     if not does_mail_contain_keyword:
         return []
