@@ -139,9 +139,9 @@ class KdmFinderView(QWidget):
         menu = QMenu(self)
 
         if kdm_clicked_on != None:
-            save_action = QAction("Save single", self)
-            save_action.triggered.connect(lambda: self._save_kdms([kdm_clicked_on]))
-            menu.addAction(save_action)
+            save_single_action = QAction("Save single", self)
+            save_single_action.triggered.connect(lambda: self._save_kdms([kdm_clicked_on]))
+            menu.addAction(save_single_action)
 
         save_selected_action = QAction("Save selected", self)
         save_selected_action.triggered.connect(self._save_selected_kdms)
