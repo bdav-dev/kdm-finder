@@ -93,3 +93,4 @@ Now, you can locate to a directory in your file system in which the KDMs should 
 
 ## Known Issues
 - The application windows don't appear in the middle of the screen on Linux when using Wayland
+- Changing the OS theme (from light to dark mode or vice versa) requires a restart of the application to avoid color issues
