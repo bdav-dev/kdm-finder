@@ -3,7 +3,7 @@ Find KDMs in your emails
 
 `Project language: English`
 
-Current Version: `1.1`
+Current Version: `1.2`
 
 
 ## Short Description
