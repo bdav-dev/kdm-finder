@@ -89,17 +89,16 @@ def _get_mail_object(mail_data: Message) -> Email:
     mail.date = mail_data['Date']
 
     for part in mail_data.walk():
-        if part.get_content_type() == "text/plain":
+        filename = part.get_filename()
+        if filename:
+            mail.attachments.append(Attachment(filename, part))
+        else:
             content = part.get_payload(decode=True)
             charset = part.get_content_charset()
 
             if content:
                 if charset: content = content.decode(charset)
                 mail.append_main_content(content)
-
-        filename = part.get_filename()
-        if filename:
-            mail.attachments.append(Attachment(filename, part))
     
     return mail
 
