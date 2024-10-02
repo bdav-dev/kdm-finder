@@ -68,16 +68,19 @@ def _convert_raw_emails(
 def _decode_subject(encoded_subject) -> str:
     decoded_subject = ""
 
-    for part, encoding in email.header.decode_header(encoded_subject):
-        if isinstance(part, bytes):
-            if encoding == None:
-                decoded_subject += part.decode('utf-8', errors='replace')
-            else:
-                decoded_subject += part.decode(encoding, errors='replace')
-                
-        elif isinstance(part, str):
-            decoded_subject += part
-    
+    try:
+        for part, encoding in email.header.decode_header(encoded_subject):
+            if isinstance(part, bytes):
+                if encoding == None:
+                    decoded_subject += part.decode('utf-8', errors='replace')
+                else:
+                    decoded_subject += part.decode(encoding, errors='replace')
+                    
+            elif isinstance(part, str):
+                decoded_subject += part
+    except Exception as e:
+        decoded_subject = "[Error: Couldn't decode subject (" + str(e) + ")]"
+
     return decoded_subject
 
 
@@ -89,16 +92,19 @@ def _get_mail_object(mail_data: Message) -> Email:
     mail.date = mail_data['Date']
 
     for part in mail_data.walk():
-        filename = part.get_filename()
-        if filename:
-            mail.attachments.append(Attachment(filename, part))
-        else:
-            content = part.get_payload(decode=True)
-            charset = part.get_content_charset()
+        try:
+            filename = part.get_filename()
+            if filename:
+                mail.attachments.append(Attachment(filename, part))
+            else:
+                content = part.get_payload(decode=True)
+                charset = part.get_content_charset()
 
-            if content:
-                if charset: content = content.decode(charset)
-                mail.append_main_content(content)
+                if content:
+                    if charset: content = content.decode(charset)
+                    mail.append_main_content(content)
+        except Exception as e:
+            pass
     
     return mail
 
